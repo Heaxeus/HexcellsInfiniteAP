@@ -45,6 +45,6 @@
 </ItemGroup>
 
 <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="cd &quot;F:\DND\steamapps\common\Hexcells Infinite\HexcellsInfiniteRandomizer\bin\Debug\net35&quot;&#xA;copy HexcellsInfiniteRandomizer.dll &quot;F:\DND\steamapps\common\Hexcells Infinite\BepInEx\plugins&quot;&#xA;F:\DND\steamapps\common\&quot;Hexcells Infinite&quot;\&quot;Hexcells Infinite.exe&quot;" />
+    <Exec Command="cd &quot;F:\DND\steamapps\common\Hexcells Infinite\HexcellsInfiniteRandomizer\HexcellsInfiniteAP\bin\Debug\net35&quot;&#xA;copy HexcellsInfiniteRandomizer.dll &quot;F:\DND\steamapps\common\Hexcells Infinite\BepInEx\plugins&quot;&#xA;F:\DND\steamapps\common\&quot;Hexcells Infinite&quot;\&quot;Hexcells Infinite.exe&quot;" />
 </Target>
 </Project>
