@@ -18,6 +18,7 @@ using System.CodeDom;
 using System.Reflection.Emit;
 using TMPro;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 
 
@@ -41,7 +42,7 @@ public class Plugin : BaseUnityPlugin
 
     public static long indexOfLastRecievedItem = 0;
 
-    public static bool check = false;
+    public static bool switchSceneCheck = true;
 
 
 
@@ -71,6 +72,78 @@ public class Plugin : BaseUnityPlugin
     }
 
 
+
+
+    private void ReloadCellDisplay()
+    {
+
+        Logger.LogMessage("Reloading Cell Displays!");
+
+        var gameManagerScript = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>();
+
+        for (int i = 0; i < 6; i++)
+        {
+            Logger.LogMessage("Reloading Cell " + i + " Display...");
+
+            if (gameManagerScript.currentSlotNumberOfGems < gameManagerScript.currentPerGameData.worldUnlockThresholds[i])
+            {
+                IEnumerator enumerator = GameObject.Find((i + 1).ToString()).transform.GetEnumerator();
+                try
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        object obj = enumerator.Current;
+                        Transform transform2 = (Transform)obj;
+                        transform2.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Locked);
+                    }
+                }
+                finally
+                {
+                    IDisposable disposable;
+                    if ((disposable = enumerator as IDisposable) != null)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+            }
+            else
+            {
+
+
+
+
+
+
+                
+                Transform transform = GameObject.Find((i + 1).ToString()).transform;
+                IEnumerator enumerator2 = transform.GetEnumerator();
+                try
+                {
+                    while (enumerator2.MoveNext())
+                    {
+                        object obj2 = enumerator2.Current;
+                        Transform transform3 = (Transform)obj2;
+                        if (levelsCleared[((transform3.GetComponent<MenuHexLevel>().levelToLoad) + (i * 6)) - 1])
+                        {
+                            transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                        }
+                        else
+                        {
+                            transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                        }
+                    }
+                }
+                finally
+                {
+                    IDisposable disposable2;
+                    if ((disposable2 = enumerator2 as IDisposable) != null)
+                    {
+                        disposable2.Dispose();
+                    }
+                }
+            }
+        }
+    }
 
 
     private void Awake()
@@ -131,9 +204,10 @@ public class Plugin : BaseUnityPlugin
             Logger.LogMessage(stuff.Key + ": " + stuff.Value);
         }
 
-        for (int i = 0; i < levelsCleared.Length; i++) {
-            levelsCleared[i] = false;
-        }
+        // for (int i = 0; i < levelsCleared.Length; i++)
+        // {
+        //     levelsCleared[i] = false;
+        // }
     }
 
 
@@ -146,6 +220,7 @@ public class Plugin : BaseUnityPlugin
         {
             Logger.LogMessage(session.Items.DequeueItem());
             itemCount++;
+            
             
         }
 
@@ -175,10 +250,11 @@ public class Plugin : BaseUnityPlugin
             }
         }
 
-        if (SceneManager.GetActiveScene().name == "Menu - Hexcells Infinite")
+        if (SceneManager.GetActiveScene().name == "Menu - Hexcells Infinite" && switchSceneCheck)
         {
             try
             {
+                switchSceneCheck = false;
                 GameObject.Find("Blue Hex 1").SetActive(false);
                 GameObject.Find("Blue Hex 3").SetActive(false);
 
@@ -192,14 +268,24 @@ public class Plugin : BaseUnityPlugin
 
                 GameObject.Find("Out of Number").GetComponent<TextMesh>().text = "36";
 
-                GameObject.Find("Gems Number").GetComponent<TextMesh>().text = itemCount.ToString();
+                //GameObject.Find("Gems Number").GetComponent<TextMesh>().text = itemCount.ToString();
 
-                GameObject.Find("Game Manager(Clone)").GetComponent<MenuLogic>().SetUpMap();
+                //GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().LoadGame();
+                if (itemCount != GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems)
+                {
+                    GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems = itemCount;
+                }
+                ReloadCellDisplay();
+                //levelEntered.OnMouseExit();
+                //Logger.LogMessage("TEST");
+                // for (int i = 0; i < levelsCleared.Length; i++) {
+                //     Logger.LogMessage(levelsCleared[i]);
+                // }
 
             }
-            catch
+            catch (Exception e)
             {
-
+                Logger.LogMessage(e);
             }
         }
     }
@@ -210,7 +296,7 @@ public class Plugin : BaseUnityPlugin
     public static bool Prefix_ModifyGemDisplay_LoadGame(GameManagerScript __instance)
     {
         Logger.LogMessage("LOAD GAME");
-        __instance.SaveGame();
+        // __instance.SaveGame();
         try
         {
             SaveAddData saveData = new SaveAddData();
@@ -254,10 +340,10 @@ public class Plugin : BaseUnityPlugin
         }
 
 
-        for (int i = 0; i < levelsCleared.Length; i++)
-        {
-            Logger.LogMessage(levelsCleared[i]);
-        }
+        // for (int i = 0; i < levelsCleared.Length; i++)
+        // {
+        //     Logger.LogMessage(levelsCleared[i]);
+        // }
         
         
 
@@ -276,17 +362,17 @@ public class Plugin : BaseUnityPlugin
     public static bool Prefix_LoadAdditionalValues_LoadSaveSlotsInfo(ref int __result, int slot, GameManagerScript __instance)
     {
 
-        string text = string.Concat(new object[] { __instance.executablePath, "/saves/slotAP.save" });
-		BinaryFormatter binaryFormatter = new BinaryFormatter();
-		SaveAddData saveAddData = new SaveAddData();
-		if (File.Exists(text))
-		{
-			Stream stream = File.Open(text, FileMode.Open);
-			binaryFormatter = new BinaryFormatter();
-			saveAddData = (SaveAddData)binaryFormatter.Deserialize(stream);
-			stream.Close();
-		}
-		__result = saveAddData.numberOfGems;
+        // string text = string.Concat(new object[] { __instance.executablePath, "/saves/slotAP.save" });
+		// BinaryFormatter binaryFormatter = new BinaryFormatter();
+		// SaveAddData saveAddData = new SaveAddData();
+		// if (File.Exists(text))
+		// {
+		// 	Stream stream = File.Open(text, FileMode.Open);
+		// 	binaryFormatter = new BinaryFormatter();
+		// 	saveAddData = (SaveAddData)binaryFormatter.Deserialize(stream);
+		// 	stream.Close();
+		// }
+		// __result = saveAddData.numberOfGems;
         return false;
 
     }
@@ -314,6 +400,7 @@ public class Plugin : BaseUnityPlugin
             SaveAddData saveData = new SaveAddData();
             saveData.levelsCleared = levelsCleared;
             // saveData.indexOfLastRecievedItem = indexOfLastRecievedItem;
+            saveData.animationsPlayed = __instance.currentSlotAnimationsPlayed;
             string text = string.Concat(new object[] { __instance.executablePath, "/saves/slotAP.save" });
             Stream stream = File.Open(text, FileMode.Create);
             BinaryFormatter binaryFormatter = new BinaryFormatter();
@@ -344,7 +431,6 @@ public class Plugin : BaseUnityPlugin
                 // GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[levelEntered.levelToLoad - 1] = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentPerGameData.levelRewardAmounts[levelEntered.levelToLoad];
                 Logger.LogMessage("Perfect Complete!");
                 levelsCleared[levelEntered.levelToLoad - 1] = true;
-                GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems++;
             }
             else
             {
@@ -354,11 +440,12 @@ public class Plugin : BaseUnityPlugin
             Logger.LogMessage(levelEntered.levelToLoad);
             Logger.LogMessage(GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[levelEntered.levelToLoad - 1]);
             Logger.LogMessage(GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentPerGameData.levelRewardAmounts[levelEntered.levelToLoad]);
-            for (int i = 0; i < levelsCleared.Length; i++) {
-            Logger.LogMessage(levelsCleared[i]);
-        }   
+            //     for (int i = 0; i < levelsCleared.Length; i++) {
+            //     Logger.LogMessage(levelsCleared[i]);
+            // }   
             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().SaveGame();
-
+            switchSceneCheck = true;
+            
             
         }
     }
@@ -378,6 +465,7 @@ public class Plugin : BaseUnityPlugin
             //GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = random.Next(-99999999, 99999999).ToString();
             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = "95637466";
             GameObject.Find("Fader").GetComponent<FaderScript>().FadeOut(37);
+            switchSceneCheck = true;
         }
         return false;
     }
@@ -429,6 +517,7 @@ public class Plugin : BaseUnityPlugin
             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().isLoadingSavedLevelGenState = false;
             GameObject.Find("Fader").GetComponent<FaderScript>().FadeOut(37);
             GameObject.Find("Loading Text").GetComponent<LoadingText>().FadeIn();
+            switchSceneCheck = true;
             
         }
 
