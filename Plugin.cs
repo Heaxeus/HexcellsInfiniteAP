@@ -15,7 +15,9 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-
+using Newtonsoft.Json.Linq;
+using Archipelago.MultiClient.Net.MessageLog.Messages;
+using Archipelago.MultiClient.Net.MessageLog.Parts;
 
 
 namespace HexcellsInfiniteRandomizer;
@@ -48,6 +50,32 @@ public class Plugin : BaseUnityPlugin
 
     public static GameObject connectedText = new();
 
+    public static JObject options = [];
+
+    //public static string returnMessage = "";
+
+
+    // public static void OnMessageReceieved(LogMessage message)
+    // {
+        
+    //         switch (message)
+    //         {
+    //             case ItemSendLogMessage itemMessage:
+    //                 while (message.ToString().Length < 4)
+    //                 {
+    //                     Logger.LogMessage("Waiting on message");
+    //                 }
+    //                 returnMessage = message.ToString();
+
+    //                 break;
+    //             default:
+    //                 Logger.LogMessage(message.ToString());
+    //                 break;
+    //         }
+        
+    // }
+
+
 
     //Custom version of SaveData, used to include levelsCleared
     [Serializable]
@@ -77,7 +105,7 @@ public class Plugin : BaseUnityPlugin
     //Used to ensure UI on Level Select Screen is accurate/correct
     private void ReloadCellDisplay()
     {
-        
+
         if (sessionConnected)
         {
             var gameManagerScript = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>();
@@ -86,8 +114,9 @@ public class Plugin : BaseUnityPlugin
             connectedText = GameObject.Find("User Levels Button");
             connectedText.GetComponent<TextMeshPro>().text = "AP Connected";
             connectedText.GetComponent<BoxCollider>().enabled = false;
-            connectedText.transform.Translate(0,5,0);
-            
+            connectedText.transform.Translate(0, 5, 0);
+            connectedText.GetComponent<TextMeshPro>().color = new Color(0, 1, 0);
+
 
 
             //removes Save slots 1 and 3
@@ -95,8 +124,10 @@ public class Plugin : BaseUnityPlugin
             GameObject.Find("Blue Hex 3").SetActive(false);
             GameObject.Find("Go To Generator").SetActive(false);
 
-            //sets save slot 2's name to slot name
+            //sets save slot 2's text elements
             GameObject.Find("Blue Hex 2/Label").GetComponent<TextMeshPro>().text = session.DataStorage.GetSlotData().GetValueSafe("Slot").ToString();
+            GameObject.Find("Blue Hex 2/Percentage 2").SetActive(false);
+            GameObject.Find("Blue Hex 2/Number 2").GetComponent<TextMesh>().text = "PLAY";
 
             //sets UI unlock amounts to correct amounts
             GameObject.Find("Unlock Amount 1").GetComponent<TextMesh>().text = "0";
@@ -177,7 +208,8 @@ public class Plugin : BaseUnityPlugin
             connectedText = GameObject.Find("User Levels Button");
             connectedText.GetComponent<TextMeshPro>().text = "Failed to Connect to AP. Check APInfo file.";
             connectedText.GetComponent<BoxCollider>().enabled = false;
-            connectedText.transform.Translate(0,5,0);
+            connectedText.transform.Translate(0, 5, 0);
+            connectedText.GetComponent<TextMeshPro>().color = new Color(1,0,0);
         }
     }
 
@@ -233,12 +265,9 @@ public class Plugin : BaseUnityPlugin
 
         try
         {
+            //session.MessageLog.OnMessageReceived += OnMessageReceieved;
             result = session.TryConnectAndLogin("Hexcells Infinite", apInfo.GetValueSafe("slot"), ItemsHandlingFlags.AllItems, password: apInfo.GetValueSafe("password"));
-            foreach (KeyValuePair<string,object> kv in session.DataStorage.GetSlotData()) {
-                Logger.LogMessage(kv.Key + ":     " + kv.Value);
-            }
-            
-            
+            options = (JObject)session.DataStorage.GetSlotData()["options"];
         }
         catch (Exception e)
         {
@@ -266,6 +295,7 @@ public class Plugin : BaseUnityPlugin
         else
         {
             sessionConnected = true;
+            
         }
 
     }
@@ -418,28 +448,56 @@ public class Plugin : BaseUnityPlugin
 
 
 
-    //LoadNextLevel is called whenever a level is completed, perfected or not. This is where locations are sent out, and levelsCleared is updated to reflect if an level has already sent out it's location (i.e. perfected level)
-    [HarmonyPatch(typeof(HexScoring), "LoadNextLevel")]
-    [HarmonyPrefix]
-    public static void Prefix_LocationCheck_LoadNextLevel(HexScoring __instance)
+    //SetupMenu is called whenever a level is completed, perfected or not. This is where locations are sent out, and levelsCleared is updated to reflect if an level has already sent out it's location (i.e. perfected level)
+    [HarmonyPatch(typeof(LevelCompleteScriptLevelGen), "SetupMenu")]
+    [HarmonyPostfix]
+    public static void Prefix_LocationCheck_SetupMenu(int mistakes, LevelCompleteScriptLevelGen __instance)
     {
+        GameObject.Find("Number Of Puzzles Completed").GetComponent<TextMesh>().text = "";
+        GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().enableWordWrapping = true;
+        GameObject.Find("Puzzle Completed Label").transform.Translate(0, 1, 0);
+
         if (!levelsCleared[levelEntered.levelToLoad - 1])
         {
-            Logger.LogMessage("Beat Level");
-            if (__instance.numberOfMistakesMade == 0)
+
+            if (int.Parse(options["RequirePerfectClears"].ToString()) == 1)
             {
-                session.Locations.CompleteLocationChecks(75000 + levelEntered.levelToLoad);
-                Logger.LogMessage("Perfect Complete!");
-                levelsCleared[levelEntered.levelToLoad - 1] = true;
+                if (mistakes == 0)
+                {
+                    session.Locations.CompleteLocationChecks(75000 + levelEntered.levelToLoad);
+                    GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
+                    GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
+                    levelsCleared[levelEntered.levelToLoad - 1] = true;
+                }
+                else
+                {
+                    GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Beat the level with no mistakes to send out a check!";
+                    GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
+                }
             }
             else
             {
-                Logger.LogMessage("Beat the Level without Mistakes to unlock check!");
+                session.Locations.CompleteLocationChecks(75000 + levelEntered.levelToLoad);
+                GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
+                GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
+                levelsCleared[levelEntered.levelToLoad - 1] = true;
             }
-
-            GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().SaveGame();
-            switchSceneCheck = true;
         }
+        else
+        {
+            GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "This location has already been checked!";
+            GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
+        }
+        GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().SaveGame();
+        switchSceneCheck = true;
+    }
+
+    //Stops overwrite of UI Labels on level complete
+    [HarmonyPatch(typeof(LevelCompleteScriptLevelGen), "AnimateCompletedText")]
+    [HarmonyPrefix]
+    public static bool Prefix_StopUIOverwrite_AnimateCompletedText(LevelCompleteScriptLevelGen __instance)
+    {
+        return false;
     }
 
 
