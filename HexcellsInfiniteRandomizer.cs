@@ -24,7 +24,7 @@ namespace HexcellsInfiniteRandomizer;
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 [BepInProcess("Hexcells Infinite.exe")]
-public class Plugin : BaseUnityPlugin
+public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
 
@@ -223,7 +223,7 @@ public class Plugin : BaseUnityPlugin
         Logger = base.Logger;
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
 
-        Harmony.CreateAndPatchAll(typeof(Plugin));
+        Harmony.CreateAndPatchAll(typeof(HexcellsInfiniteRandomizer));
 
 
         //handle AP Session Info/initialization
