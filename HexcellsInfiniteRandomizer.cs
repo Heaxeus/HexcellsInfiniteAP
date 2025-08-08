@@ -301,7 +301,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
     }
 
     //DEBUG key to brute solve puzzles
-    KeyboardShortcut key = new KeyboardShortcut(KeyCode.U);
+    //KeyboardShortcut key = new KeyboardShortcut(KeyCode.U);
 
     //runs every frame. used to check for AP items coming in, check goal completion, use brute solver for debug, and ensure level select screen is accurate using ReloadCellDisplay
     private void Update()
@@ -320,26 +320,26 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 session.SetGoalAchieved();
             }
 
-            if (key.IsPressed())
-            {
-                if (SceneManager.GetActiveScene().name == "Level Generator")
-                {
-                    for (int i = 0; i < 93; i++)
-                    {
-                        var cell = GameObject.Find("Orange Hex(Clone)").GetComponent<HexBehaviour>();
-                        if (!cell.containsShapeBlock)
-                        {
-                            cell.DestroyClick();
-                        }
-                        else
-                        {
-                            cell.HighlightClick();
-                        }
+            // if (key.IsPressed())
+            // {
+            //     if (SceneManager.GetActiveScene().name == "Level Generator")
+            //     {
+            //         for (int i = 0; i < 93; i++)
+            //         {
+            //             var cell = GameObject.Find("Orange Hex(Clone)").GetComponent<HexBehaviour>();
+            //             if (!cell.containsShapeBlock)
+            //             {
+            //                 cell.DestroyClick();
+            //             }
+            //             else
+            //             {
+            //                 cell.HighlightClick();
+            //             }
 
-                    }
+            //         }
 
-                }
-            }
+            //     }
+            // }
 
         }
         //toggled by switchSceneCheck, which is true whenever we switch from any scene back to the level select scene
