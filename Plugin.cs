@@ -1,21 +1,15 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using Archipelago.MultiClient.Net;
 using Archipelago.MultiClient.Net.Enums;
-using Archipelago.MultiClient.Net.Models;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using UnityEngine;
 using HarmonyLib;
-using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Linq;
-using Newtonsoft.Json;
-using System.CodeDom;
-using System.Reflection.Emit;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections;
@@ -45,7 +39,7 @@ public class Plugin : BaseUnityPlugin
     public static bool switchSceneCheck = true;
 
 
-
+    //Custom version of SaveData, used to include levelsCleared
     [Serializable]
     public class SaveAddData
     {
@@ -53,27 +47,23 @@ public class Plugin : BaseUnityPlugin
         {
             info.AddValue("LevelsCleared", levelsCleared);
             info.AddValue("NumberOfGems", numberOfGems);
-		    info.AddValue("LevelGemsUnlocked", levelGemsUnlocked);
-		    info.AddValue("AnimationsPlayed", animationsPlayed);
-	    }
-        
+            info.AddValue("LevelGemsUnlocked", levelGemsUnlocked);
+            info.AddValue("AnimationsPlayed", animationsPlayed);
+        }
+
 
         public bool[] levelsCleared = new bool[36];
 
+        public int numberOfGems;
 
-        // Token: 0x040001B1 RID: 433
-	    public int numberOfGems;
-
-        // Token: 0x040001B2 RID: 434
         public int[] levelGemsUnlocked = new int[36];
 
-        // Token: 0x040001B3 RID: 435
         public int[] animationsPlayed = new int[5];
     }
 
 
 
-
+    //Used to ensure UI on Level Select Screen is accurate/correct
     private void ReloadCellDisplay()
     {
 
@@ -81,11 +71,44 @@ public class Plugin : BaseUnityPlugin
 
         var gameManagerScript = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>();
 
+
+        //removes Save slots 1 and 3
+        GameObject.Find("Blue Hex 1").SetActive(false);
+        GameObject.Find("Blue Hex 3").SetActive(false);
+        GameObject.Find("Go To Generator").SetActive(false);
+        GameObject.Find("User Levels Button").SetActive(false);
+
+        //sets save slot 2's name to slot name
+        GameObject.Find("Blue Hex 2/Label").GetComponent<TextMeshPro>().text = session.DataStorage.GetSlotData().GetValueSafe("Slot").ToString();
+
+        //sets UI unlock amounts to correct amounts
+        GameObject.Find("Unlock Amount 1").GetComponent<TextMesh>().text = "0";
+        GameObject.Find("Unlock Amount 2").GetComponent<TextMesh>().text = "6";
+        GameObject.Find("Unlock Amount 3").GetComponent<TextMesh>().text = "12";
+        GameObject.Find("Unlock Amount 4").GetComponent<TextMesh>().text = "18";
+        GameObject.Find("Unlock Amount 5").GetComponent<TextMesh>().text = "24";
+        GameObject.Find("Unlock Amount 6").GetComponent<TextMesh>().text = "30";
+
+        //changes UI of center gem bottom number
+        GameObject.Find("Out of Number").GetComponent<TextMesh>().text = "36";
+
+        //ensures that the amount of items we have recieved is also the number shown in center/current gem count
+        if (itemCount != GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems)
+        {
+            GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems = itemCount;
+            GameObject.Find("Gems Number").GetComponent<TextMesh>().text = itemCount.ToString();
+        }
+
+        Logger.LogMessage(itemCount);
+        Logger.LogMessage(GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems);
+
+
+        //Logic for handling display proper state of levels (locked, incomplete, perfect)
         for (int i = 0; i < 6; i++)
         {
-            Logger.LogMessage("Reloading Cell " + i + " Display...");
+            Logger.LogMessage("Reloading Cell Group" + i + "...");
 
-            if (gameManagerScript.currentSlotNumberOfGems < gameManagerScript.currentPerGameData.worldUnlockThresholds[i])
+            if (itemCount < gameManagerScript.currentPerGameData.worldUnlockThresholds[i])
             {
                 IEnumerator enumerator = GameObject.Find((i + 1).ToString()).transform.GetEnumerator();
                 try
@@ -108,22 +131,17 @@ public class Plugin : BaseUnityPlugin
             }
             else
             {
-
-
-
-
-
-
-                
                 Transform transform = GameObject.Find((i + 1).ToString()).transform;
                 IEnumerator enumerator2 = transform.GetEnumerator();
                 try
                 {
                     while (enumerator2.MoveNext())
                     {
+                        
                         object obj2 = enumerator2.Current;
                         Transform transform3 = (Transform)obj2;
-                        if (levelsCleared[((transform3.GetComponent<MenuHexLevel>().levelToLoad) + (i * 6)) - 1])
+                        Logger.LogMessage(transform3.GetComponent<MenuHexLevel>().levelToLoad - 1);
+                        if (levelsCleared[transform3.GetComponent<MenuHexLevel>().levelToLoad - 1])
                         {
                             transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
                         }
@@ -146,15 +164,16 @@ public class Plugin : BaseUnityPlugin
     }
 
 
+
+
+    //Initial method that establishes AP session
     private void Awake()
     {
         // Plugin startup logic
         Logger = base.Logger;
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
 
-        Logger.LogMessage("BEFORE PATCH");
         Harmony.CreateAndPatchAll(typeof(Plugin));
-        Logger.LogMessage("AFTER PATCH");
 
         session = ArchipelagoSessionFactory.CreateSession("localhost", 38281);
         LoginResult result;
@@ -190,9 +209,6 @@ public class Plugin : BaseUnityPlugin
         }
 
 
-
-
-
         foreach (var stuff in session.DataStorage.GetSlotData())
         {
             Logger.LogMessage(stuff.Key + ": " + stuff.Value);
@@ -204,24 +220,18 @@ public class Plugin : BaseUnityPlugin
             Logger.LogMessage(stuff.Key + ": " + stuff.Value);
         }
 
-        // for (int i = 0; i < levelsCleared.Length; i++)
-        // {
-        //     levelsCleared[i] = false;
-        // }
     }
 
-
+    //DEBUG key to brute solve puzzles
     KeyboardShortcut key = new KeyboardShortcut(KeyCode.U);
 
-
+    //runs every frame. used to check for AP items coming in, check goal completion, use brute solver for debug, and ensure level select screen is accurate using ReloadCellDisplay
     private void Update()
     {
         if (session.Items.Any())
         {
             Logger.LogMessage(session.Items.DequeueItem());
             itemCount++;
-            
-            
         }
 
 
@@ -233,8 +243,10 @@ public class Plugin : BaseUnityPlugin
         if (key.IsPressed())
         {
             Logger.LogMessage(SceneManager.GetActiveScene().name);
-            if (SceneManager.GetActiveScene().name == "Level Generator") {
-                for (int i = 0; i < 93; i++) {
+            if (SceneManager.GetActiveScene().name == "Level Generator")
+            {
+                for (int i = 0; i < 93; i++)
+                {
                     var cell = GameObject.Find("Orange Hex(Clone)").GetComponent<HexBehaviour>();
                     if (!cell.containsShapeBlock)
                     {
@@ -244,43 +256,18 @@ public class Plugin : BaseUnityPlugin
                     {
                         cell.HighlightClick();
                     }
-                     
+
                 }
-                
+
             }
         }
-
+        //toggled by switchSceneCheck, which is true whenever we switch from any scene back to the level select scene
         if (SceneManager.GetActiveScene().name == "Menu - Hexcells Infinite" && switchSceneCheck)
         {
             try
             {
                 switchSceneCheck = false;
-                GameObject.Find("Blue Hex 1").SetActive(false);
-                GameObject.Find("Blue Hex 3").SetActive(false);
-
-                GameObject.Find("Blue Hex 2/Label").GetComponent<TextMeshPro>().text = session.DataStorage.GetSlotData().GetValueSafe("Slot").ToString();
-                GameObject.Find("Unlock Amount 1").GetComponent<TextMesh>().text = "0";
-                GameObject.Find("Unlock Amount 2").GetComponent<TextMesh>().text = "6";
-                GameObject.Find("Unlock Amount 3").GetComponent<TextMesh>().text = "12";
-                GameObject.Find("Unlock Amount 4").GetComponent<TextMesh>().text = "18";
-                GameObject.Find("Unlock Amount 5").GetComponent<TextMesh>().text = "24";
-                GameObject.Find("Unlock Amount 6").GetComponent<TextMesh>().text = "30";
-
-                GameObject.Find("Out of Number").GetComponent<TextMesh>().text = "36";
-
-                //GameObject.Find("Gems Number").GetComponent<TextMesh>().text = itemCount.ToString();
-
-                //GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().LoadGame();
-                if (itemCount != GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems)
-                {
-                    GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems = itemCount;
-                }
                 ReloadCellDisplay();
-                //levelEntered.OnMouseExit();
-                //Logger.LogMessage("TEST");
-                // for (int i = 0; i < levelsCleared.Length; i++) {
-                //     Logger.LogMessage(levelsCleared[i]);
-                // }
 
             }
             catch (Exception e)
@@ -291,12 +278,16 @@ public class Plugin : BaseUnityPlugin
     }
 
 
+    //custom implementation of LoadGame, which also handles setting unlock amounts, as well as showing correct level states when returning to game
     [HarmonyPatch(typeof(GameManagerScript), "LoadGame")]
     [HarmonyPrefix]
     public static bool Prefix_ModifyGemDisplay_LoadGame(GameManagerScript __instance)
     {
+        if (!File.Exists(__instance.executablePath + "/saves/slotAP.save"))
+        {
+            __instance.SaveGame();
+        }
         Logger.LogMessage("LOAD GAME");
-        // __instance.SaveGame();
         try
         {
             SaveAddData saveData = new SaveAddData();
@@ -339,57 +330,11 @@ public class Plugin : BaseUnityPlugin
 
         }
 
-
-        // for (int i = 0; i < levelsCleared.Length; i++)
-        // {
-        //     Logger.LogMessage(levelsCleared[i]);
-        // }
-        
-        
-
-
-        
-
-        __instance.SaveGame();
-
         return false;
     }
 
 
-
-    [HarmonyPatch(typeof(GameManagerScript), "LoadSaveSlotsInfo")]
-    [HarmonyPrefix]
-    public static bool Prefix_LoadAdditionalValues_LoadSaveSlotsInfo(ref int __result, int slot, GameManagerScript __instance)
-    {
-
-        // string text = string.Concat(new object[] { __instance.executablePath, "/saves/slotAP.save" });
-		// BinaryFormatter binaryFormatter = new BinaryFormatter();
-		// SaveAddData saveAddData = new SaveAddData();
-		// if (File.Exists(text))
-		// {
-		// 	Stream stream = File.Open(text, FileMode.Open);
-		// 	binaryFormatter = new BinaryFormatter();
-		// 	saveAddData = (SaveAddData)binaryFormatter.Deserialize(stream);
-		// 	stream.Close();
-		// }
-		// __result = saveAddData.numberOfGems;
-        return false;
-
-    }
-
-
-    [HarmonyPatch(typeof(GameManagerScript), "CheckIfOldFormatSaveExistsAndConvertToNewSaveFormat")]
-    [HarmonyPrefix]
-    public static bool Prefix_SaveAdditionalValues_CheckIfOldFormatSaveExistsAndConvertToNewSaveFormat(GameManagerScript __instance)
-    {
-
-        return false;
-
-    }
-
-
-
-
+    //custom implementation of SaveGame, used to include levelsCleared
     [HarmonyPatch(typeof(GameManagerScript), "SaveGame")]
     [HarmonyPrefix]
     public static bool Prefix_SaveAdditionalValues_SaveGame(GameManagerScript __instance)
@@ -399,7 +344,6 @@ public class Plugin : BaseUnityPlugin
         {
             SaveAddData saveData = new SaveAddData();
             saveData.levelsCleared = levelsCleared;
-            // saveData.indexOfLastRecievedItem = indexOfLastRecievedItem;
             saveData.animationsPlayed = __instance.currentSlotAnimationsPlayed;
             string text = string.Concat(new object[] { __instance.executablePath, "/saves/slotAP.save" });
             Stream stream = File.Open(text, FileMode.Create);
@@ -417,7 +361,7 @@ public class Plugin : BaseUnityPlugin
 
 
 
-
+    //LoadNextLevel is called whenever a level is completed, perfected or not. This is where locations are sent out, and levelsCleared is updated to reflect if an level has already sent out it's location (i.e. perfected level)
     [HarmonyPatch(typeof(HexScoring), "LoadNextLevel")]
     [HarmonyPrefix]
     public static void Prefix_LocationCheck_LoadNextLevel(HexScoring __instance)
@@ -428,33 +372,24 @@ public class Plugin : BaseUnityPlugin
             if (__instance.numberOfMistakesMade == 0)
             {
                 session.Locations.CompleteLocationChecks(75000 + levelEntered.levelToLoad);
-                // GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[levelEntered.levelToLoad - 1] = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentPerGameData.levelRewardAmounts[levelEntered.levelToLoad];
                 Logger.LogMessage("Perfect Complete!");
                 levelsCleared[levelEntered.levelToLoad - 1] = true;
             }
             else
             {
                 Logger.LogMessage("Beat the Level without Mistakes to unlock check!");
-                // GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[levelEntered.levelToLoad - 1] = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentPerGameData.levelRewardAmounts[levelEntered.levelToLoad] - 1;
             }
-            Logger.LogMessage(levelEntered.levelToLoad);
-            Logger.LogMessage(GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[levelEntered.levelToLoad - 1]);
-            Logger.LogMessage(GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentPerGameData.levelRewardAmounts[levelEntered.levelToLoad]);
-            //     for (int i = 0; i < levelsCleared.Length; i++) {
-            //     Logger.LogMessage(levelsCleared[i]);
-            // }   
+
             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().SaveGame();
             switchSceneCheck = true;
-            
-            
         }
     }
 
 
-
+    //Overwrites what level is loaded when selected what level to play, ensuring that a random level is loaded.
     [HarmonyPatch(typeof(MenuHexLevel), "OnMouseOver")]
     [HarmonyPrefix]
-    public static bool Prefix_Test_MenuHexLevel(MenuHexLevel __instance)
+    public static bool Prefix_LoadRandomLevel_MenuHexLevel(MenuHexLevel __instance)
     {
         if (Input.GetMouseButtonDown(0))
         {
@@ -465,63 +400,27 @@ public class Plugin : BaseUnityPlugin
             //GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = random.Next(-99999999, 99999999).ToString();
             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = "95637466";
             GameObject.Find("Fader").GetComponent<FaderScript>().FadeOut(37);
-            switchSceneCheck = true;
         }
         return false;
     }
-    
-    [HarmonyPatch(typeof(StartGeneratorLevel), "OnMouseOver")]
+
+
+    [HarmonyPatch(typeof(MenuExitButton), "OnMouseOver")]
     [HarmonyPrefix]
-    public static bool Prefix_StartGeneratorLevel_OnMouseOver(StartGeneratorLevel __instance)
+    public static bool Prefix_CustomExitLevel_MenuExitButton(MenuExitButton __instance)
     {
-        if (__instance.isActive && Input.GetMouseButtonDown(0))
-        {
-            int num = int.Parse(__instance.seedText.text) % 9;
-            if (num == 0)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.Aeolian);
-            }
-            else if (num == 1)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.Melodia);
-            }
-            else if (num == 2)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.Raindrops);
-            }
-            else if (num == 3)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.M1);
-            }
-            else if (num == 4)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.M2);
-            }
-            else if (num == 5)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.M3);
-            }
-            else if (num == 6)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.NewTrack1);
-            }
-            else if (num == 7)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.NewTrack2);
-            }
-            else if (num == 8)
-            {
-                __instance.musicDirector.ChangeTrack(MusicDirector.Track.NewTrack3);
-            }
-            GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = random.Next(-99999999, 99999999).ToString();
-            GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().isLoadingSavedLevelGenState = false;
-            GameObject.Find("Fader").GetComponent<FaderScript>().FadeOut(37);
-            GameObject.Find("Loading Text").GetComponent<LoadingText>().FadeIn();
+        if (Input.GetMouseButtonDown(0))
+		{
+			if (GameObject.Find("Game Manager(Clone)") != null)
+			{
+				GameManagerScript component = GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>();
+				component.SaveCurrentLevelState();
+			}
             switchSceneCheck = true;
-            
-        }
-
+			GameObject.Find("Fader").GetComponent<FaderScript>().FadeOut(0);
+		}
         return false;
     }
 
+    
 }
