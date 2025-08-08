@@ -16,8 +16,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Archipelago.MultiClient.Net.MessageLog.Messages;
-using Archipelago.MultiClient.Net.MessageLog.Parts;
 
 
 namespace HexcellsInfiniteRandomizer;
@@ -52,12 +50,14 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
     public static JObject options = [];
 
+    public static bool hasShield = false;
+
     //public static string returnMessage = "";
 
 
     // public static void OnMessageReceieved(LogMessage message)
     // {
-        
+
     //         switch (message)
     //         {
     //             case ItemSendLogMessage itemMessage:
@@ -72,7 +72,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
     //                 Logger.LogMessage(message.ToString());
     //                 break;
     //         }
-        
+
     // }
 
 
@@ -87,6 +87,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             info.AddValue("NumberOfGems", numberOfGems);
             info.AddValue("LevelGemsUnlocked", levelGemsUnlocked);
             info.AddValue("AnimationsPlayed", animationsPlayed);
+            info.AddValue("HasShield", hasShield);
         }
 
 
@@ -97,6 +98,8 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         public int[] levelGemsUnlocked = new int[36];
 
         public int[] animationsPlayed = new int[5];
+
+        public bool hasShield;
 
     }
 
@@ -301,7 +304,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
     }
 
     //DEBUG key to brute solve puzzles
-    //KeyboardShortcut key = new KeyboardShortcut(KeyCode.U);
+    KeyboardShortcut key = new KeyboardShortcut(KeyCode.U);
 
     //runs every frame. used to check for AP items coming in, check goal completion, use brute solver for debug, and ensure level select screen is accurate using ReloadCellDisplay
     private void Update()
@@ -320,26 +323,26 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 session.SetGoalAchieved();
             }
 
-            // if (key.IsPressed())
-            // {
-            //     if (SceneManager.GetActiveScene().name == "Level Generator")
-            //     {
-            //         for (int i = 0; i < 93; i++)
-            //         {
-            //             var cell = GameObject.Find("Orange Hex(Clone)").GetComponent<HexBehaviour>();
-            //             if (!cell.containsShapeBlock)
-            //             {
-            //                 cell.DestroyClick();
-            //             }
-            //             else
-            //             {
-            //                 cell.HighlightClick();
-            //             }
+            if (key.IsPressed())
+            {
+                if (SceneManager.GetActiveScene().name == "Level Generator")
+                {
+                    for (int i = 0; i < 93; i++)
+                    {
+                        var cell = GameObject.Find("Orange Hex(Clone)").GetComponent<HexBehaviour>();
+                        if (!cell.containsShapeBlock)
+                        {
+                            cell.DestroyClick();
+                        }
+                        else
+                        {
+                            cell.HighlightClick();
+                        }
 
-            //         }
+                    }
 
-            //     }
-            // }
+                }
+            }
 
         }
         //toggled by switchSceneCheck, which is true whenever we switch from any scene back to the level select scene
@@ -379,6 +382,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 BinaryFormatter binaryFormatter = new BinaryFormatter();
                 saveData = (SaveAddData)binaryFormatter.Deserialize(stream);
                 stream.Close();
+                hasShield = saveData.hasShield;
                 levelsCleared = saveData.levelsCleared;
                 __instance.currentSlotNumberOfGems = itemCount;
                 __instance.currentSlotLevelGemsUnlocked = saveData.levelGemsUnlocked;
@@ -432,6 +436,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             SaveAddData saveData = new SaveAddData();
             saveData.levelsCleared = levelsCleared;
             saveData.animationsPlayed = __instance.currentSlotAnimationsPlayed;
+            saveData.hasShield = hasShield;
             string text = string.Concat(new object[] { __instance.executablePath, "/saves/slotAP.save" });
             Stream stream = File.Open(text, FileMode.Create);
             BinaryFormatter binaryFormatter = new BinaryFormatter();
@@ -462,18 +467,28 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
             if (int.Parse(options["RequirePerfectClears"].ToString()) == 1)
             {
-                if (mistakes == 0)
+                if (mistakes == 0 || (mistakes == 1 && hasShield))
                 {
                     session.Locations.CompleteLocationChecks(75000 + levelEntered.levelToLoad);
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
                     levelsCleared[levelEntered.levelToLoad - 1] = true;
+                    if (mistakes == 1)
+                    {
+                        hasShield = false;
+                        GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text += "\n\nYou have used your shield";
+                    }
                 }
-                else
-                {
-                    GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Beat the level with no mistakes to send out a check!";
-                    GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
-                }
+                    else
+                    {
+                        GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Beat the level with no mistakes to send out a check!";
+                        GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
+                        if (int.Parse(options["EnableShields"].ToString()) == 1)
+                        {
+                            hasShield = true;
+                            GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text += "\n\nYou now have a shield to block 1 mistake.";
+                        }
+                    }
             }
             else
             {
