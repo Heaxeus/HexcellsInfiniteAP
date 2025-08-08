@@ -512,8 +512,8 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             GameObject.Find("Game Manager(Clone)").GetComponent<OptionsManager>().currentOptions.levelGenHardModeActive = false;
             __instance.musicDirector.ChangeTrack(__instance.levelTrack);
 
-            //GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = random.Next(-99999999, 99999999).ToString();
-            GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = "95637466";
+            GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = random.Next(-99999999, 99999999).ToString();
+            //GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = "95637466";
             GameObject.Find("Fader").GetComponent<FaderScript>().FadeOut(37);
         }
         return false;
