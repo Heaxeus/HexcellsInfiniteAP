@@ -52,6 +52,8 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
     public static bool hasShield = false;
 
+    public static int[] levelSeeds = new int[36];
+
     //public static string returnMessage = "";
 
 
@@ -524,7 +526,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         if (Input.GetMouseButtonDown(0))
         {
             levelEntered = __instance;
-            GameObject.Find("Game Manager(Clone)").GetComponent<OptionsManager>().currentOptions.levelGenHardModeActive = false;
+            GameObject.Find("Game Manager(Clone)").GetComponent<OptionsManager>().currentOptions.levelGenHardModeActive = Convert.ToBoolean(int.Parse(options["HardGeneration"].ToString()));
             __instance.musicDirector.ChangeTrack(__instance.levelTrack);
 
             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().seedNumber = random.Next(-99999999, 99999999).ToString();
