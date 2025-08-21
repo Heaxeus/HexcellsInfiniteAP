@@ -265,7 +265,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         
         apInfo = JsonConvert.DeserializeObject<Dictionary<string,string>>(srIn.ReadLine());
 
-        session = ArchipelagoSessionFactory.CreateSession(apInfo.GetValueSafe("host"), int.Parse(apInfo.GetValueSafe("port")));
+        session = ArchipelagoSessionFactory.CreateSession("wss/" + apInfo.GetValueSafe("host"), int.Parse(apInfo.GetValueSafe("port")));
         LoginResult result;
 
         try
