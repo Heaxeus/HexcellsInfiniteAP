@@ -471,7 +471,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             {
                 if (mistakes == 0 || (mistakes == 1 && hasShield))
                 {
-                    session.Locations.CompleteLocationChecks(75000 + levelEntered.levelToLoad);
+                    session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
                     levelsCleared[levelEntered.levelToLoad - 1] = true;
