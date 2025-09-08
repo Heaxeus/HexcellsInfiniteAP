@@ -206,6 +206,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         else
         {
             connectedText = GameObject.Find("User Levels Button");
+            DestroyImmediate(connectedText.GetComponent<LoadLocalizedText>());
             connectedText.GetComponent<TextMeshPro>().text = "Failed to Connect to AP. Check APInfo file.";
             connectedText.GetComponent<BoxCollider>().enabled = false;
             connectedText.transform.Translate(0, 5, 0);
@@ -1017,21 +1018,24 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
     [HarmonyPrefix]
     public static bool Prefix_CustomCheckLevelProgress_CheckForLevelSaveState(ref bool __result, GameManagerScript __instance)
     {
-        if (int.Parse(options["PuzzleOptions"].ToString()) == 2)
+        if (options["PuzzleOptions"] != null)
         {
-            string text = string.Empty;
-            if (__instance.currentMenuState == GameManagerScript.MenuState.LevelSelect)
+            if (int.Parse(options["PuzzleOptions"].ToString()) == 2)
             {
-                text = string.Concat(
-                [
-            Application.loadedLevelName,
+                string text = string.Empty;
+                if (__instance.currentMenuState == GameManagerScript.MenuState.LevelSelect)
+                {
+                    text = string.Concat(
+                    [
+                Application.loadedLevelName,
             "-",
             levelEntered.levelToLoad-1,
             ".save"
-                ]);
+                    ]);
+                }
+                __result = File.Exists(__instance.executablePath + "/saves/" + text);
+                return false;
             }
-            __result = File.Exists(__instance.executablePath + "/saves/" + text);
-            return false;
         }
         return true;
     }
