@@ -371,7 +371,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
     private void OnSceneChange(Scene scene, LoadSceneMode mode)
     {
         Logger.LogMessage(scene.name);
-        if (scene.name.StartsWith("1") || scene.name.StartsWith("2") || scene.name.StartsWith("3") || scene.name.StartsWith("4") || scene.name.StartsWith("5") || scene.name.StartsWith("6") || scene.name.StartsWith("Level"))
+        if ((scene.name.StartsWith("1") || scene.name.StartsWith("2") || scene.name.StartsWith("3") || scene.name.StartsWith("4") || scene.name.StartsWith("5") || scene.name.StartsWith("6") || scene.name.StartsWith("Level")) && int.Parse(options["EnableShields"].ToString()) == 1)
         {
             GameObject box;
             if (scene.name.StartsWith("Level"))
@@ -403,8 +403,6 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             try
             {
                 initialReloadCellDisplay = true;
-                ReloadCellDisplay();
-
             }
             catch (Exception e)
             {
@@ -486,7 +484,6 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[i] = 2;
                         }
                     }
-                    ReloadCellDisplay();
                 }
             }
         }
