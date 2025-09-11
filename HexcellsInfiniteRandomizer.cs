@@ -56,6 +56,8 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
     public GameObject levelCompleteScreen = null;
 
+    public static List<string> levelUnlockItems = [];
+
 
 
     //Custom version of SaveData, used to include levelsCleared
@@ -125,34 +127,108 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             }
             catch
             {
-                
+
             }
 
-            //sets UI unlock amounts to correct amounts
+            if (int.Parse(options["LevelUnlockType"].ToString()) == 1)
+            {
+
+                //sets UI unlock amounts to correct amounts
                 GameObject.Find("Unlock Amount 1").GetComponent<TextMesh>().text = "0";
-            GameObject.Find("Unlock Amount 2").GetComponent<TextMesh>().text = "6";
-            GameObject.Find("Unlock Amount 3").GetComponent<TextMesh>().text = "12";
-            GameObject.Find("Unlock Amount 4").GetComponent<TextMesh>().text = "18";
-            GameObject.Find("Unlock Amount 5").GetComponent<TextMesh>().text = "24";
-            GameObject.Find("Unlock Amount 6").GetComponent<TextMesh>().text = "30";
+                GameObject.Find("Unlock Amount 2").GetComponent<TextMesh>().text = "6";
+                GameObject.Find("Unlock Amount 3").GetComponent<TextMesh>().text = "12";
+                GameObject.Find("Unlock Amount 4").GetComponent<TextMesh>().text = "18";
+                GameObject.Find("Unlock Amount 5").GetComponent<TextMesh>().text = "24";
+                GameObject.Find("Unlock Amount 6").GetComponent<TextMesh>().text = "30";
 
 
-            //changes UI of center gem bottom number
-            GameObject.Find("Out of Number").GetComponent<TextMesh>().text = "36";
+                //changes UI of center gem bottom number
+                GameObject.Find("Out of Number").GetComponent<TextMesh>().text = "36";
 
-            //ensures that the amount of items we have recieved is also the number shown in center/current gem count
-            if (itemCount != GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems)
-            {
-                GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems = itemCount;
-                GameObject.Find("Gems Number").GetComponent<TextMesh>().text = itemCount.ToString();
+                //ensures that the amount of items we have recieved is also the number shown in center/current gem count
+                if (itemCount != GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems)
+                {
+                    GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems = itemCount;
+                    GameObject.Find("Gems Number").GetComponent<TextMesh>().text = itemCount.ToString();
+                }
+
+
+                //Logic for handling display proper state of levels (locked, incomplete, perfect)
+                for (int i = 0; i < 6; i++)
+                {
+                    if (itemCount < gameManagerScript.currentPerGameData.worldUnlockThresholds[i])
+                    {
+                        IEnumerator enumerator = GameObject.Find((i + 1).ToString()).transform.GetEnumerator();
+                        try
+                        {
+                            while (enumerator.MoveNext())
+                            {
+                                object obj = enumerator.Current;
+                                Transform transform2 = (Transform)obj;
+                                transform2.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Locked);
+                            }
+                        }
+                        finally
+                        {
+                            if (enumerator is IDisposable disposable)
+                            {
+                                disposable.Dispose();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Transform transform = GameObject.Find((i + 1).ToString()).transform;
+                        IEnumerator enumerator2 = transform.GetEnumerator();
+                        try
+                        {
+                            while (enumerator2.MoveNext())
+                            {
+
+                                object obj2 = enumerator2.Current;
+                                Transform transform3 = (Transform)obj2;
+                                if (levelsCleared[transform3.GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            if (enumerator2 is IDisposable disposable2)
+                            {
+                                disposable2.Dispose();
+                            }
+                        }
+                    }
+                }
             }
-
-
-
-            //Logic for handling display proper state of levels (locked, incomplete, perfect)
-            for (int i = 0; i < 6; i++)
+            else if (int.Parse(options["LevelUnlockType"].ToString()) == 2)
             {
-                if (itemCount < gameManagerScript.currentPerGameData.worldUnlockThresholds[i])
+                //sets UI unlock amounts to correct amounts
+                GameObject.Find("Unlock Amount 1").GetComponent<TextMesh>().text = "";
+                GameObject.Find("Unlock Amount 2").GetComponent<TextMesh>().text = "";
+                GameObject.Find("Unlock Amount 3").GetComponent<TextMesh>().text = "";
+                GameObject.Find("Unlock Amount 4").GetComponent<TextMesh>().text = "";
+                GameObject.Find("Unlock Amount 5").GetComponent<TextMesh>().text = "";
+                GameObject.Find("Unlock Amount 6").GetComponent<TextMesh>().text = "";
+
+
+                //changes UI of center gem bottom number
+                GameObject.Find("Out of Number").GetComponent<TextMesh>().text = "";
+
+                //ensures that the amount of items we have recieved is also the number shown in center/current gem count
+
+                GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotNumberOfGems = 0;
+                GameObject.Find("Gems Number").GetComponent<TextMesh>().text = "";
+
+
+                //Locks all levels
+                for (int i = 0; i < 6; i++)
                 {
                     IEnumerator enumerator = GameObject.Find((i + 1).ToString()).transform.GetEnumerator();
                     try
@@ -172,26 +248,104 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                         }
                     }
                 }
-                else
+
+
+
+                //Unlocks levels based on AP received items
+                for (int i = 1; i < 7; i++)
                 {
-                    Transform transform = GameObject.Find((i + 1).ToString()).transform;
+                    string lvl1 = "Hexcells " + i + "-1";
+                    string lvl2 = "Hexcells " + i + "-2";
+                    string lvl3 = "Hexcells " + i + "-3";
+                    string lvl4 = "Hexcells " + i + "-4";
+                    string lvl5 = "Hexcells " + i + "-5";
+                    string lvl6 = "Hexcells " + i + "-6";
+
+                    object[] enumlist = new object[6];
+                    int id = 0;
+
+                    Transform transform = GameObject.Find(i.ToString()).transform;
                     IEnumerator enumerator2 = transform.GetEnumerator();
                     try
                     {
                         while (enumerator2.MoveNext())
-                        {
-
-                            object obj2 = enumerator2.Current;
-                            Transform transform3 = (Transform)obj2;
-                            if (levelsCleared[transform3.GetComponent<MenuHexLevel>().levelToLoad - 1])
                             {
-                                transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                enumlist[id] = enumerator2.Current;
+                                id++;
                             }
-                            else
+                            id = 0;
+                        foreach (string entry in levelUnlockItems)
+                        {
+                            if (lvl1 == entry)
                             {
-                                transform3.GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                if (levelsCleared[((Transform)enumlist[0]).GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    ((Transform)enumlist[0]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    ((Transform)enumlist[0]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
+
+                            }
+                            else if (lvl2 == entry)
+                            {
+                                if (levelsCleared[((Transform)enumlist[1]).GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    ((Transform)enumlist[1]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    ((Transform)enumlist[1]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
+                            }
+                            else if (lvl3 == entry)
+                            {
+                                if (levelsCleared[((Transform)enumlist[2]).GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    ((Transform)enumlist[2]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    ((Transform)enumlist[2]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
+                            }
+                            else if (lvl4 == entry)
+                            {
+                                if (levelsCleared[((Transform)enumlist[3]).GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    ((Transform)enumlist[3]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    ((Transform)enumlist[3]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
+                            }
+                            else if (lvl5 == entry)
+                            {
+                                if (levelsCleared[((Transform)enumlist[4]).GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    ((Transform)enumlist[4]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    ((Transform)enumlist[4]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
+                            }
+                            else if (lvl6 == entry)
+                            {
+                                if (levelsCleared[((Transform)enumlist[5]).GetComponent<MenuHexLevel>().levelToLoad - 1])
+                                {
+                                    ((Transform)enumlist[5]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Perfect);
+                                }
+                                else
+                                {
+                                    ((Transform)enumlist[5]).GetComponent<MenuHexLevel>().SetState(MenuHexLevel.State.Notplayed);
+                                }
                             }
                         }
+
+
                     }
                     finally
                     {
@@ -199,18 +353,19 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                         {
                             disposable2.Dispose();
                         }
+
                     }
                 }
             }
-        }
-        else
-        {
-            connectedText = GameObject.Find("User Levels Button");
-            DestroyImmediate(connectedText.GetComponent<LoadLocalizedText>());
-            connectedText.GetComponent<TextMeshPro>().text = "Failed to Connect to AP. Check APInfo file.";
-            connectedText.GetComponent<BoxCollider>().enabled = false;
-            connectedText.transform.Translate(0, 5, 0);
-            connectedText.GetComponent<TextMeshPro>().color = new Color(1, 0, 0);
+            else
+            {
+                connectedText = GameObject.Find("User Levels Button");
+                DestroyImmediate(connectedText.GetComponent<LoadLocalizedText>());
+                connectedText.GetComponent<TextMeshPro>().text = "Failed to Connect to AP. Check APInfo file.";
+                connectedText.GetComponent<BoxCollider>().enabled = false;
+                connectedText.transform.Translate(0, 5, 0);
+                connectedText.GetComponent<TextMeshPro>().color = new Color(1, 0, 0);
+            }
         }
     }
 
@@ -230,16 +385,16 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
 
         //handle AP Session Info/initialization
-        
+
         gamepath = Application.dataPath;
-		if (Application.platform == RuntimePlatform.OSXPlayer)
-		{
-			gamepath += "/../..";
-		}
-		else
-		{
-			gamepath += "/..";
-		}
+        if (Application.platform == RuntimePlatform.OSXPlayer)
+        {
+            gamepath += "/../..";
+        }
+        else
+        {
+            gamepath += "/..";
+        }
 
         if (!File.Exists(gamepath + "/APInfo.json"))
         {
@@ -260,8 +415,8 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
         FileStream fsIn = new(gamepath + "/APInfo.json", FileMode.Open, FileAccess.Read);
         using StreamReader srIn = new(fsIn);
-        
-        apInfo = JsonConvert.DeserializeObject<Dictionary<string,string>>(srIn.ReadLine());
+
+        apInfo = JsonConvert.DeserializeObject<Dictionary<string, string>>(srIn.ReadLine());
         if (apInfo.GetValueSafe("host") != "localhost")
         {
             session = ArchipelagoSessionFactory.CreateSession("wss://" + apInfo.GetValueSafe("host"), int.Parse(apInfo.GetValueSafe("port")));
@@ -270,7 +425,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         {
             session = ArchipelagoSessionFactory.CreateSession(apInfo.GetValueSafe("host"), int.Parse(apInfo.GetValueSafe("port")));
         }
-        
+
         LoginResult result;
 
         try
@@ -311,7 +466,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         else
         {
             sessionConnected = true;
-            
+
         }
 
     }
@@ -327,14 +482,24 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
         {
             if (session.Items.Any())
             {
-                session.Items.DequeueItem();
-                itemCount++;
+                if (int.Parse(options["LevelUnlockType"].ToString()) == 1)
+                {
+                    session.Items.DequeueItem();
+                    itemCount++;
+                }
+                else if (int.Parse(options["LevelUnlockType"].ToString()) == 2)
+                {
+                    var test = session.Items.DequeueItem().ItemName.ToString();
+                    Logger.LogWarning(test);
+                    levelUnlockItems.Add(test);
+                }
+                
             }
 
 
             if (levelsCleared.All(x => x))
             {
-                session.SetGoalAchieved();
+                session.SetGoalAchieved(); 
             }
 
             if (key.IsPressed() && debug)
@@ -541,7 +706,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             {
                 if (mistakes == 0 || (mistakes == 1 && hasShield))
                 {
-                    session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                    session.Locations.CompleteLocationChecks(levelEntered.levelToLoad-1);
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
                     levelsCleared[levelEntered.levelToLoad - 1] = true;
@@ -559,7 +724,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             }
             else
             {
-                session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                session.Locations.CompleteLocationChecks(levelEntered.levelToLoad-1);
                 GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
                 GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
                 levelsCleared[levelEntered.levelToLoad - 1] = true;
@@ -866,7 +1031,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 {
                     text = string.Concat(
                     [
-                    Application.loadedLevelName,
+                    SceneManager.GetActiveScene().name,
                     "-",
                     levelEntered.levelToLoad-1,
                     ".save"
@@ -904,7 +1069,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 {
                     text = string.Concat(
                     [
-                Application.loadedLevelName,
+                SceneManager.GetActiveScene().name,
                 "-",
                 levelEntered.levelToLoad-1,
                 ".save"
@@ -1024,7 +1189,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 {
                     text = string.Concat(
                     [
-                Application.loadedLevelName,
+                SceneManager.GetActiveScene().name,
             "-",
             levelEntered.levelToLoad-1,
             ".save"
@@ -1049,7 +1214,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             {
                 text = string.Concat(new object[]
                 {
-            Application.loadedLevelName,
+            SceneManager.GetActiveScene().name,
             "-",
             levelEntered.levelToLoad-1,
             ".save"
