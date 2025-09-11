@@ -52,11 +52,13 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
     public static int[] levelSeeds = new int[36];
 
-    public static bool initialReloadCellDisplay = true;
+    public static bool initialReloadCellDisplay = false;
 
     public GameObject levelCompleteScreen = null;
 
     public static List<string> levelUnlockItems = [];
+
+    public static bool onetimeUIChanges = true;
 
 
 
@@ -106,7 +108,12 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             DestroyImmediate(connectedText.GetComponent<LoadLocalizedText>());
             connectedText.GetComponent<TextMeshPro>().text = "AP Connected";
             connectedText.GetComponent<BoxCollider>().enabled = false;
-            connectedText.transform.Translate(0, 5, 0);
+            if (onetimeUIChanges)
+            {
+                connectedText.transform.Translate(0, 5, 0);
+                onetimeUIChanges = false;
+            }
+            
             connectedText.GetComponent<TextMeshPro>().color = new Color(0, 1, 0);
 
 
@@ -363,7 +370,11 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                 DestroyImmediate(connectedText.GetComponent<LoadLocalizedText>());
                 connectedText.GetComponent<TextMeshPro>().text = "Failed to Connect to AP. Check APInfo file.";
                 connectedText.GetComponent<BoxCollider>().enabled = false;
-                connectedText.transform.Translate(0, 5, 0);
+                if (onetimeUIChanges) {
+                    connectedText.transform.Translate(0, 5, 0);
+                    onetimeUIChanges = false;
+                }
+                
                 connectedText.GetComponent<TextMeshPro>().color = new Color(1, 0, 0);
             }
         }
@@ -473,7 +484,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
     //DEBUG key to brute solve puzzles
     KeyboardShortcut key = new(KeyCode.U);
-    public bool debug = false;
+    public bool debug = true;
 
     //runs every frame. used to check for AP items coming in, check goal completion, use brute solver for debug, and ensure level select screen is accurate using ReloadCellDisplay
     private void Update()
@@ -493,6 +504,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                     Logger.LogWarning(test);
                     levelUnlockItems.Add(test);
                 }
+                
                 
             }
 
@@ -526,6 +538,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             if (SceneManager.GetActiveScene().name == "Menu - Hexcells Infinite" && initialReloadCellDisplay == true)
             {
                 initialReloadCellDisplay = false;
+                onetimeUIChanges = true;
                 ReloadCellDisplay();
             }
 
@@ -649,6 +662,7 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
                             GameObject.Find("Game Manager(Clone)").GetComponent<GameManagerScript>().currentSlotLevelGemsUnlocked[i] = 2;
                         }
                     }
+                    ReloadCellDisplay();
                 }
             }
         }
