@@ -715,12 +715,18 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
 
         if (!levelsCleared[levelEntered.levelToLoad - 1])
         {
-
             if (int.Parse(options["RequirePerfectClears"].ToString()) == 1)
             {
                 if (mistakes == 0 || (mistakes == 1 && hasShield))
                 {
-                    session.Locations.CompleteLocationChecks(levelEntered.levelToLoad-1);
+                    if (int.Parse(options["LevelUnlockType"].ToString()) == 1)
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                    }
+                    else
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad+36);
+                    }
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
                     GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
                     levelsCleared[levelEntered.levelToLoad - 1] = true;
@@ -738,7 +744,16 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             }
             else
             {
-                session.Locations.CompleteLocationChecks(levelEntered.levelToLoad-1);
+
+                if (int.Parse(options["LevelUnlockType"].ToString()) == 1)
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                    }
+                    else
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad+36);
+                    }
+
                 GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().text = "Check Sent!";
                 GameObject.Find("Puzzle Completed Label").GetComponent<TextMeshPro>().sortingOrder = 1;
                 levelsCleared[levelEntered.levelToLoad - 1] = true;
