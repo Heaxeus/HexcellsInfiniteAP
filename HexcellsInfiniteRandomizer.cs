@@ -834,12 +834,18 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             {
                 if (mistakes == 0 || (mistakes == 1 && hasShield))
                 {
-                    session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                    if (int.Parse(options["LevelUnlockType"].ToString()) == 1)
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                    }
+                    else
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad+36);
+                    }
                     textUI.GetComponent<TextMeshPro>().text = "Check Sent!";
                     textUI.GetComponent<TextMeshPro>().sortingOrder = 1;
                     levelsCleared[levelEntered.levelToLoad - 1] = true;
-                    Logger.LogWarning(levelEntered.levelToLoad - 1);
-                    Logger.LogWarning(levelsCleared[levelEntered.levelToLoad - 1]);
+                    
                     if (mistakes == 1)
                     {
                         hasShield = false;
@@ -854,12 +860,18 @@ public class HexcellsInfiniteRandomizer : BaseUnityPlugin
             }
             else
             {
-                session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                if (int.Parse(options["LevelUnlockType"].ToString()) == 1)
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad);
+                    }
+                    else
+                    {
+                        session.Locations.CompleteLocationChecks(levelEntered.levelToLoad+36);
+                    }
                 textUI.GetComponent<TextMeshPro>().text = "Check Sent!";
                 textUI.GetComponent<TextMeshPro>().sortingOrder = 1;
                 levelsCleared[levelEntered.levelToLoad - 1] = true;
-                Logger.LogWarning(levelEntered.levelToLoad-1);
-                    Logger.LogWarning(levelsCleared[levelEntered.levelToLoad-1]);
+                
             }
             if (int.Parse(options["EnableShields"].ToString()) == 1 && mistakes > 0)
             {
